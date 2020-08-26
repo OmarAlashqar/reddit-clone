@@ -11,6 +11,8 @@ import {
 import { User } from "../entities/User";
 import { MyContext } from "../types";
 import argon2 from "argon2";
+import { EntityManager } from "@mikro-orm/postgresql";
+import { __cookie_name__ } from "../constants";
 
 @InputType()
 class UsernamePasswordInput {
@@ -30,7 +32,7 @@ class FieldError {
 
 @ObjectType()
 class UserResponse {
-  @Field(() => FieldError, { nullable: true })
+  @Field(() => [FieldError], { nullable: true })
   errors?: FieldError[];
   @Field(() => User, { nullable: true })
   user?: User;
@@ -49,7 +51,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") { username, password }: UsernamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     if (username.length < 3) {
       return {
@@ -74,10 +76,24 @@ export class UserResolver {
     }
 
     const hashedPassword = await argon2.hash(password);
-    const user = em.create(User, { username, password: hashedPassword });
 
+    let user = null;
     try {
-      await em.persistAndFlush(user);
+      // using query builder to try it out
+      const res = await (em as EntityManager)
+        .createQueryBuilder(User)
+        .getKnexQuery()
+        .insert({
+          username,
+          password: hashedPassword,
+          // postgres converts these fields to have underscores
+          // and knex wouldn't know to convert createdAt -> created_at
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning("*");
+
+      user = res[0];
     } catch (error) {
       // duplicate username
       if (error.code == "23505") {
@@ -91,6 +107,9 @@ export class UserResolver {
         };
       }
     }
+
+    // auto-login after register
+    req.session!.userId = user.id;
 
     return { user };
   }
@@ -129,5 +148,21 @@ export class UserResolver {
     req.session!.userId = user.id;
 
     return { user };
+  }
+
+  @Mutation(() => Boolean)
+  async logout(@Ctx() { req, res }: MyContext): Promise<Boolean> {
+    return new Promise((resolve) =>
+      req.session?.destroy((err) => {
+        // always clear cookie
+        res.clearCookie(__cookie_name__);
+
+        // attempt to clear redis entry for session
+        if (err) {
+          console.error(err);
+          resolve(false);
+        } else resolve(true);
+      })
+    );
   }
 }
