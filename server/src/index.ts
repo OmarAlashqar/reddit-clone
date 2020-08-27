@@ -5,14 +5,14 @@ import cors from "cors";
 import express from "express";
 import session from "express-session";
 import path from "path";
-import redis from "redis";
+import Redis from "ioredis";
 import "reflect-metadata";
 import { buildSchema } from "type-graphql";
 import {
+  __cookie_name__,
   __port__,
   __prod__,
   __session_secret__,
-  __cookie_name__,
 } from "./constants";
 import microConfig from "./mikro-orm.config";
 import { PostResolver } from "./resolvers/post";
@@ -37,13 +37,13 @@ const main = async () => {
   );
 
   const RedisStore = connectRedis(session);
-  const redisClient = redis.createClient();
+  const redis = new Redis();
 
   // session middleware
   app.use(
     session({
       name: __cookie_name__,
-      store: new RedisStore({ client: redisClient, disableTouch: true }),
+      store: new RedisStore({ client: redis, disableTouch: true }),
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
         httpOnly: true, // js cannot access cookie
@@ -61,7 +61,7 @@ const main = async () => {
       resolvers: [PostResolver, UserResolver],
       validate: false,
     }),
-    context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
+    context: ({ req, res }): MyContext => ({ em: orm.em, req, res, redis }),
   });
 
   // apollo middleware

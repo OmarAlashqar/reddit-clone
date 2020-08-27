@@ -2,7 +2,6 @@ import {
   Arg,
   Ctx,
   Field,
-  InputType,
   Mutation,
   Resolver,
   ObjectType,
@@ -12,15 +11,11 @@ import { User } from "../entities/User";
 import { MyContext } from "../types";
 import argon2 from "argon2";
 import { EntityManager } from "@mikro-orm/postgresql";
-import { __cookie_name__ } from "../constants";
-
-@InputType()
-class UsernamePasswordInput {
-  @Field()
-  username: string;
-  @Field()
-  password: string;
-}
+import { __cookie_name__, __forgot_pass_prefix__ } from "../constants";
+import { UsernamePasswordInput } from "./UsernamePasswordInput";
+import { validateRegister } from "../utils/validateRegister";
+import { sendEmail } from "../utils/sendEmail";
+import { v4 as uuidv4 } from "uuid";
 
 @ObjectType()
 class FieldError {
@@ -50,30 +45,11 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async register(
-    @Arg("options") { username, password }: UsernamePasswordInput,
+    @Arg("options") { username, password, email }: UsernamePasswordInput,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    if (username.length < 3) {
-      return {
-        errors: [
-          {
-            field: "username",
-            message: "your username must be at least 3 characters long",
-          },
-        ],
-      };
-    }
-
-    if (password.length < 3) {
-      return {
-        errors: [
-          {
-            field: "password",
-            message: "your password must be at least 3 characters long",
-          },
-        ],
-      };
-    }
+    const errors = validateRegister({ username, email, password });
+    if (errors) return { errors };
 
     const hashedPassword = await argon2.hash(password);
 
@@ -86,6 +62,7 @@ export class UserResolver {
         .insert({
           username,
           password: hashedPassword,
+          email,
           // postgres converts these fields to have underscores
           // and knex wouldn't know to convert createdAt -> created_at
           created_at: new Date(),
@@ -116,17 +93,23 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg("options") { username, password }: UsernamePasswordInput,
+    @Arg("usernameOrEmail") usernameOrEmail: string,
+    @Arg("password") password: string,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(User, { username });
+    // this is ok since it was enforced at register
+    const filter = usernameOrEmail.includes("@")
+      ? { email: usernameOrEmail }
+      : { username: usernameOrEmail };
+
+    const user = await em.findOne(User, filter);
 
     if (!user) {
       return {
         errors: [
           {
-            field: "username",
-            message: "whoops, that username doesn't exist",
+            field: "usernameOrEmail",
+            message: "whoops, that username/email doesn't exist",
           },
         ],
       };
@@ -164,5 +147,91 @@ export class UserResolver {
         } else resolve(true);
       })
     );
+  }
+
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg("email") email: string,
+    @Ctx() { em, redis }: MyContext
+  ): Promise<Boolean> {
+    const user = await em.findOne(User, { email });
+
+    // no feedback to user for security
+    if (!user) return true;
+
+    const token = uuidv4();
+
+    // no await so user doesn't know if if worked or not
+    redis.set(
+      `${__forgot_pass_prefix__}${token}`,
+      user.id,
+      "ex", // set an expiry date
+      1000 * 60 * 60 * 24 * 3 // 3 days
+    );
+
+    sendEmail({
+      to: email,
+      subject: "Reddit-clone password change form",
+      html: `Follow link to change e-mail: <a href="http://localhost:3000/change-password/${token}">reset password</a>`,
+    });
+
+    return true;
+  }
+
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg("token") token: string,
+    @Arg("newPassword") newPassword: string,
+    @Ctx() { em, req, redis }: MyContext
+  ): Promise<UserResponse> {
+    if (newPassword.length < 3) {
+      return {
+        errors: [
+          {
+            field: "newPassword",
+            message: "your password must be at least 3 characters long",
+          },
+        ],
+      };
+    }
+
+    // check token
+    const key = `${__forgot_pass_prefix__}${token}`;
+    const userId = await redis.get(key);
+    if (!userId) {
+      return {
+        errors: [
+          {
+            field: "token",
+            message: "token expired",
+          },
+        ],
+      };
+    }
+
+    const user = await em.findOne(User, { id: parseInt(userId) });
+
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: "token",
+            message: "user no longer exists",
+          },
+        ],
+      };
+    }
+
+    // update password
+    user.password = await argon2.hash(newPassword);
+    await em.persistAndFlush(user);
+
+    // ensures token is only used once
+    await redis.del(key);
+
+    // auto-login
+    req.session!.userId = user.id;
+
+    return { user };
   }
 }
