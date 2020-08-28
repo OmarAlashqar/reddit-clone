@@ -24,7 +24,7 @@ require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const main = async () => {
   // DB connection
-  await createConnection({
+  const conn = await createConnection({
     type: "postgres",
     database: dbCreds.name,
     username: dbCreds.username,
@@ -32,7 +32,10 @@ const main = async () => {
     logging: !__prod__,
     synchronize: !__prod__,
     entities: [Post, User],
+    migrations: [path.join(__dirname, "./migrations/*")],
   });
+
+  conn.runMigrations();
 
   // server
   const app = express();
