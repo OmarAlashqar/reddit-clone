@@ -8,6 +8,8 @@ import {
   Field,
   Ctx,
   UseMiddleware,
+  FieldResolver,
+  Root,
 } from "type-graphql";
 import { Post } from "../entities/Post";
 import { MyContext } from "../types";
@@ -22,8 +24,18 @@ class PostInput {
   text: string;
 }
 
-@Resolver()
+@Resolver(Post)
 export class PostResolver {
+  @FieldResolver(() => String)
+  textSnippet(@Root() root: Post): string {
+    // shorten text to 50 characters if necessary
+    if (root.text.length > 50) {
+      return `${root.text.slice(0, 50)}...`;
+    } else {
+      return root.text;
+    }
+  }
+
   @Query(() => [Post])
   async posts(
     @Arg("limit", () => Int) limit: number,
