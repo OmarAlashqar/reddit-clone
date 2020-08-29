@@ -3,6 +3,7 @@ import { Box, Link, Flex, Button, Heading } from "@chakra-ui/core";
 import NextLink from "next/link";
 import { useMeQuery, useLogoutMutation } from "../generated/graphql";
 import { isServer } from "../utils/isServer";
+import { useRouter } from "next/router";
 
 interface NavBarProps {}
 
@@ -10,6 +11,8 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
   // query is useless if built with SSR since no cookie is set
   const [{ data, fetching }] = useMeQuery({ pause: isServer() });
   const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
+
+  const router = useRouter();
 
   let body = null;
 
@@ -28,7 +31,10 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
         <Box mr={4}>{data.me.username}</Box>
         <Button
           variant="link"
-          onClick={() => logout()}
+          onClick={async () => {
+            await logout();
+            router.reload();
+          }}
           isLoading={logoutFetching}
         >
           logout
