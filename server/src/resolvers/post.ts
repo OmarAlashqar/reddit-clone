@@ -17,7 +17,7 @@ import { Post } from "../entities/Post";
 import { isAuth } from "../middleware/isAuth";
 import { MyContext } from "../types";
 import { FieldError } from "./FieldError";
-import { Vote } from "../entities/Vote";
+import { User } from "../entities/User";
 
 @InputType()
 class PostInput {
@@ -55,44 +55,44 @@ export class PostResolver {
     }
   }
 
+  @FieldResolver(() => User)
+  creator(@Root() post: Post, @Ctx() { userLoader }: MyContext): Promise<User> {
+    return userLoader.load(post.creatorId);
+  }
+
+  @FieldResolver(() => Int, { nullable: true })
+  async voteStatus(
+    @Root() post: Post,
+    @Ctx() { voteLoader, req }: MyContext
+  ): Promise<number | null> {
+    if (!req.session!.userId) return null;
+
+    const vote = await voteLoader.load({
+      userId: req.session!.userId,
+      postId: post.id,
+    });
+
+    return vote ? vote.value : null;
+  }
+
   @Query(() => PaginatedPosts)
   async posts(
     @Arg("limit", () => Int) limit: number,
-    @Arg("cursor", () => String, { nullable: true }) cursor: string | null,
-    @Ctx() { req }: MyContext
+    @Arg("cursor", () => String, { nullable: true }) cursor: string | null
   ): Promise<PaginatedPosts> {
-    const { userId } = req.session!;
     const actualLimit = Math.min(50, limit);
 
     const replacements: any[] = [actualLimit + 1];
 
-    if (userId) replacements.push(userId);
-
-    let cursorIndex = 3;
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)));
-      cursorIndex = replacements.length;
     }
 
     const posts = await getConnection().query(
       `
-      SELECT
-        p.*,
-        json_build_object(
-          'id', u.id,
-          'username', u.username,
-          'email', u.email,
-          'createdAt', u."createdAt",
-          'updatedAt', u."updatedAt"
-        ) creator,
-        ${
-          userId
-            ? `(SELECT value FROM vote WHERE "userId" = $2 AND "postId" = p.id) "voteStatus"`
-            : `null as "voteStatus"`
-        }
+      SELECT p.*
       FROM post p
-      INNER JOIN public.user u ON u.id = p."creatorId"
-      ${cursor ? `WHERE p."createdAt" < $${cursorIndex}` : ""}
+      ${cursor ? `WHERE p."createdAt" < $2` : ""}
       ORDER BY p."createdAt" DESC
       LIMIT $1
       `,
@@ -107,7 +107,7 @@ export class PostResolver {
 
   @Query(() => Post, { nullable: true })
   post(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
-    return Post.findOne(id, { relations: ["creator"] });
+    return Post.findOne(id);
   }
 
   @Mutation(() => Post)

@@ -22,6 +22,8 @@ import { UserResolver } from "./resolvers/user";
 import { MyContext } from "./types";
 import { Vote } from "./entities/Vote";
 import { VoteResolver } from "./resolvers/vote";
+import { createUserLoader } from "./utils/createUserLoader";
+import { createVoteLoader } from "./utils/createVoteLoader";
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const main = async () => {
@@ -75,7 +77,13 @@ const main = async () => {
       resolvers: [PostResolver, UserResolver, VoteResolver],
       validate: false,
     }),
-    context: ({ req, res }): MyContext => ({ req, res, redis }),
+    context: ({ req, res }): MyContext => ({
+      req,
+      res,
+      redis,
+      userLoader: createUserLoader(),
+      voteLoader: createVoteLoader(),
+    }),
   });
 
   // apollo middleware
