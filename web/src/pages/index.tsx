@@ -10,14 +10,14 @@ import {
   Link,
   Stack,
   Text,
-  IconButton,
 } from "@chakra-ui/core";
 import { withUrqlClient } from "next-urql";
 import NextLink from "next/link";
 import { useState } from "react";
+import { EditDeletePostButtons } from "../components/EditDeletePostButtons";
 import { Layout } from "../components/Layout";
 import { VoteSection } from "../components/VoteSection";
-import { usePostsQuery, useDeletePostMutation } from "../generated/graphql";
+import { useMeQuery, usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
 
 const Index = () => {
@@ -27,7 +27,7 @@ const Index = () => {
   });
   const [{ data, fetching }] = usePostsQuery({ variables });
 
-  const [_, deletePost] = useDeletePostMutation();
+  const [{ data: meData }] = useMeQuery();
 
   let body = null;
   if (!fetching && !data) {
@@ -60,16 +60,11 @@ const Index = () => {
                   <Text flex={1} mt={4}>
                     {p.textSnippet}
                   </Text>
-                  <IconButton
-                    variant="outline"
-                    variantColor="red"
-                    ml="auto"
-                    icon="delete"
-                    aria-label="delete post"
-                    onClick={() => {
-                      deletePost({ id: p.id });
-                    }}
-                  />
+                  {meData?.me?.id !== p.creator.id ? null : (
+                    <Box ml="auto">
+                      <EditDeletePostButtons id={p.id} />
+                    </Box>
+                  )}
                 </Flex>
               </Box>
             </Flex>

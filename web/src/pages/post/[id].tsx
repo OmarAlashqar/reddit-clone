@@ -1,28 +1,23 @@
-import { withUrqlClient } from "next-urql";
-import { useRouter } from "next/router";
-import React from "react";
-import { Layout } from "../../components/Layout";
-import { usePostQuery } from "../../generated/graphql";
-import { createUrqlClient } from "../../utils/createUrqlClient";
 import {
-  Heading,
-  Text,
   Alert,
+  AlertDescription,
   AlertIcon,
   AlertTitle,
-  AlertDescription,
+  Heading,
+  Text,
+  Box,
 } from "@chakra-ui/core";
+import { withUrqlClient } from "next-urql";
+import React from "react";
+import { Layout } from "../../components/Layout";
+import { createUrqlClient } from "../../utils/createUrqlClient";
+import { useGetPostFromUrl } from "../../utils/useGetPostFromUrl";
+import { EditDeletePostButtons } from "../../components/EditDeletePostButtons";
+import { useMeQuery } from "../../generated/graphql";
 
 export const Post: React.FC = ({}) => {
-  const router = useRouter();
-
-  const idParsed =
-    typeof router.query.id === "string" ? parseInt(router.query.id) : -1;
-
-  const [{ data, fetching }] = usePostQuery({
-    pause: idParsed === -1,
-    variables: { id: idParsed },
-  });
+  const [{ data, fetching }] = useGetPostFromUrl();
+  const [{ data: meData }] = useMeQuery();
 
   if (fetching) {
     return (
@@ -47,8 +42,15 @@ export const Post: React.FC = ({}) => {
     <Layout>
       <Heading fontSize="xl">{data.post.title}</Heading>
       <Text>posted by {data.post.creator.username}</Text>
-      <br />
-      <Text mt={4}>{data.post.text}</Text>
+      <Box my={4}>
+        <Text mt={4}>{data.post.text}</Text>
+      </Box>
+
+      {meData?.me?.id !== data.post.creator.id ? null : (
+        <Box ml="auto">
+          <EditDeletePostButtons id={data.post.id} />
+        </Box>
+      )}
     </Layout>
   );
 };
