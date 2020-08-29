@@ -1,6 +1,11 @@
-import { cacheExchange } from "@urql/exchange-graphcache";
+import { cacheExchange, Resolver } from "@urql/exchange-graphcache";
 import Router from "next/router";
-import { dedupExchange, Exchange, fetchExchange } from "urql";
+import {
+  dedupExchange,
+  Exchange,
+  fetchExchange,
+  stringifyVariables,
+} from "urql";
 import { pipe, tap } from "wonka";
 import {
   LoginMutation,
@@ -24,8 +29,56 @@ const errorExchange: Exchange = ({ forward }) => (ops$) => {
   );
 };
 
+const cursorPagination = (cursorKey = "data"): Resolver => {
+  return (_parent, fieldArgs, cache, info) => {
+    const { parentKey: entityKey, fieldName } = info;
+
+    // grabs all queries in the cache
+    const allFields = cache.inspectFields(entityKey);
+
+    // select appropriate ones
+    const fieldInfos = allFields.filter((info) => info.fieldName === fieldName);
+
+    // cache miss
+    const size = fieldInfos.length;
+    if (size === 0) return undefined;
+
+    // check if the cache has data for this request
+    const fieldKey = `${fieldName}(${stringifyVariables(fieldArgs)})`;
+    const isAlreadyInCache = cache.resolve(
+      cache.resolveFieldByKey(entityKey, fieldKey) as string,
+      "posts"
+    );
+
+    // makes URQL fetch more data if there wasn't a cached result
+    info.partial = !isAlreadyInCache;
+
+    let hasMore = true;
+    const results = fieldInfos.flatMap((fi) => {
+      const key = cache.resolveFieldByKey(entityKey, fi.fieldKey) as string;
+
+      // side-effect, rip functional methodology :P
+      // hasMore is false if any are false
+      const _hasMore = cache.resolve(key, "hasMore") as boolean;
+      hasMore = hasMore && _hasMore;
+
+      return cache.resolve(key, cursorKey) as string[];
+    });
+
+    return { __typename: "PaginatedPosts", hasMore, [cursorKey]: results };
+  };
+};
+
 export const createUrqlClient = (ssrExchange: any) => {
   const cacheEx = cacheExchange({
+    keys: {
+      PaginatedPosts: () => null,
+    },
+    resolvers: {
+      Query: {
+        posts: cursorPagination("posts"),
+      },
+    },
     updates: {
       Mutation: {
         login: (_result, args, cache, info) => {

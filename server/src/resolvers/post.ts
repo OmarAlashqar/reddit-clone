@@ -1,20 +1,21 @@
 import {
   Arg,
+  Ctx,
+  Field,
+  FieldResolver,
+  InputType,
   Int,
   Mutation,
+  ObjectType,
   Query,
   Resolver,
-  InputType,
-  Field,
-  Ctx,
-  UseMiddleware,
-  FieldResolver,
   Root,
+  UseMiddleware,
 } from "type-graphql";
-import { Post } from "../entities/Post";
-import { MyContext } from "../types";
-import { isAuth } from "../middleware/isAuth";
 import { getConnection } from "typeorm";
+import { Post } from "../entities/Post";
+import { isAuth } from "../middleware/isAuth";
+import { MyContext } from "../types";
 
 @InputType()
 class PostInput {
@@ -22,6 +23,14 @@ class PostInput {
   title: string;
   @Field()
   text: string;
+}
+
+@ObjectType()
+class PaginatedPosts {
+  @Field(() => [Post])
+  posts: Post[];
+  @Field()
+  hasMore: boolean;
 }
 
 @Resolver(Post)
@@ -36,24 +45,32 @@ export class PostResolver {
     }
   }
 
-  @Query(() => [Post])
+  @Query(() => PaginatedPosts)
   async posts(
     @Arg("limit", () => Int) limit: number,
     @Arg("cursor", () => String, { nullable: true }) cursor: string | null
-  ): Promise<Post[]> {
+  ): Promise<PaginatedPosts> {
     const actualLimit = Math.min(50, limit);
 
     const qb = getConnection()
       .getRepository(Post)
       .createQueryBuilder("p")
       .orderBy('"createdAt"', "DESC")
-      .take(actualLimit);
+      // attempt to grab an extra one to see if there's more
+      .take(actualLimit + 1);
 
     if (cursor) {
-      qb.where('"createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) });
+      qb.where('"createdAt" < :cursor', {
+        cursor: new Date(parseInt(cursor, 10)),
+      });
     }
 
-    return qb.getMany();
+    const posts = await qb.getMany();
+
+    return {
+      posts: posts.slice(0, actualLimit),
+      hasMore: posts.length === actualLimit + 1,
+    };
   }
 
   @Query(() => Post, { nullable: true })
