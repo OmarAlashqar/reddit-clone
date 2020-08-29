@@ -7,7 +7,7 @@ import {
   Button,
   Flex,
   Heading,
-  IconButton,
+  Link,
   Stack,
   Text,
 } from "@chakra-ui/core";
@@ -15,9 +15,9 @@ import { withUrqlClient } from "next-urql";
 import NextLink from "next/link";
 import { useState } from "react";
 import { Layout } from "../components/Layout";
+import { VoteSection } from "../components/VoteSection";
 import { usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
-import { VoteSection } from "../components/VoteSection";
 
 const Index = () => {
   const [variables, setVariables] = useState({
@@ -46,7 +46,11 @@ const Index = () => {
           <Flex key={p.id} p={5} shadow="md" borderWidth="1px">
             <VoteSection post={p} />
             <Box>
-              <Heading fontSize="xl">{p.title}</Heading>
+              <NextLink href="post/[id]" as={`post/${p.id}`}>
+                <Link>
+                  <Heading fontSize="xl">{p.title}</Heading>
+                </Link>
+              </NextLink>
               <Text>posted by {p.creator.username}</Text>
               <br />
               <Text mt={4}>{p.textSnippet}</Text>
@@ -59,13 +63,6 @@ const Index = () => {
 
   return (
     <Layout>
-      <Flex align="center">
-        <Heading>Reddit-Clone</Heading>
-        <NextLink href="/create-post">
-          <Button ml="auto">Create Post</Button>
-        </NextLink>
-      </Flex>
-      <br />
       {body}
       {data && data.posts.hasMore ? (
         <Flex>
