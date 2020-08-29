@@ -44,7 +44,9 @@ export type Post = {
   title: Scalars['String'];
   text: Scalars['String'];
   points: Scalars['Float'];
+  voteStatus?: Maybe<Scalars['Int']>;
   creatorId: Scalars['Float'];
+  creator: User;
   textSnippet: Scalars['String'];
 };
 
@@ -67,6 +69,7 @@ export type Mutation = {
   logout: Scalars['Boolean'];
   forgotPassword: Scalars['Boolean'];
   changePassword: UserResponse;
+  vote: Scalars['Boolean'];
 };
 
 
@@ -107,6 +110,12 @@ export type MutationChangePasswordArgs = {
   token: Scalars['String'];
 };
 
+
+export type MutationVoteArgs = {
+  postId: Scalars['Int'];
+  value: Scalars['Int'];
+};
+
 export type PostInput = {
   title: Scalars['String'];
   text: Scalars['String'];
@@ -133,6 +142,15 @@ export type UsernamePasswordInput = {
 export type BaseErrorFragment = (
   { __typename?: 'FieldError' }
   & Pick<FieldError, 'field' | 'message'>
+);
+
+export type BasePostFragment = (
+  { __typename?: 'Post' }
+  & Pick<Post, 'id' | 'createdAt' | 'updatedAt' | 'title' | 'points' | 'voteStatus' | 'textSnippet'>
+  & { creator: (
+    { __typename?: 'User' }
+    & Pick<User, 'id' | 'username'>
+  ) }
 );
 
 export type BaseUserFragment = (
@@ -223,6 +241,17 @@ export type RegisterMutation = (
   ) }
 );
 
+export type VoteMutationVariables = Exact<{
+  postId: Scalars['Int'];
+  value: Scalars['Int'];
+}>;
+
+
+export type VoteMutation = (
+  { __typename?: 'Mutation' }
+  & Pick<Mutation, 'vote'>
+);
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -247,11 +276,26 @@ export type PostsQuery = (
     & Pick<PaginatedPosts, 'hasMore'>
     & { posts: Array<(
       { __typename?: 'Post' }
-      & Pick<Post, 'id' | 'createdAt' | 'updatedAt' | 'title' | 'textSnippet' | 'points'>
+      & BasePostFragment
     )> }
   ) }
 );
 
+export const BasePostFragmentDoc = gql`
+    fragment BasePost on Post {
+  id
+  createdAt
+  updatedAt
+  title
+  points
+  voteStatus
+  textSnippet
+  creator {
+    id
+    username
+  }
+}
+    `;
 export const BaseErrorFragmentDoc = gql`
     fragment BaseError on FieldError {
   field
@@ -343,6 +387,15 @@ export const RegisterDocument = gql`
 export function useRegisterMutation() {
   return Urql.useMutation<RegisterMutation, RegisterMutationVariables>(RegisterDocument);
 };
+export const VoteDocument = gql`
+    mutation Vote($postId: Int!, $value: Int!) {
+  vote(postId: $postId, value: $value)
+}
+    `;
+
+export function useVoteMutation() {
+  return Urql.useMutation<VoteMutation, VoteMutationVariables>(VoteDocument);
+};
 export const MeDocument = gql`
     query Me {
   me {
@@ -359,16 +412,11 @@ export const PostsDocument = gql`
   posts(limit: $limit, cursor: $cursor) {
     hasMore
     posts {
-      id
-      createdAt
-      updatedAt
-      title
-      textSnippet
-      points
+      ...BasePost
     }
   }
 }
-    `;
+    ${BasePostFragmentDoc}`;
 
 export function usePostsQuery(options: Omit<Urql.UseQueryArgs<PostsQueryVariables>, 'query'> = {}) {
   return Urql.useQuery<PostsQuery>({ query: PostsDocument, ...options });

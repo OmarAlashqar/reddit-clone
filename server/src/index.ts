@@ -20,6 +20,8 @@ import { User } from "./entities/User";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import { MyContext } from "./types";
+import { Vote } from "./entities/Vote";
+import { VoteResolver } from "./resolvers/vote";
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const main = async () => {
@@ -31,7 +33,7 @@ const main = async () => {
     password: dbCreds.password,
     logging: !__prod__,
     synchronize: !__prod__,
-    entities: [Post, User],
+    entities: [Post, User, Vote],
     migrations: [path.join(__dirname, "./migrations/*")],
   });
 
@@ -70,7 +72,7 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [PostResolver, UserResolver],
+      resolvers: [PostResolver, UserResolver, VoteResolver],
       validate: false,
     }),
     context: ({ req, res }): MyContext => ({ req, res, redis }),

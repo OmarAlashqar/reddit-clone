@@ -7,6 +7,8 @@ import {
   ObjectType,
   Query,
   Resolver,
+  FieldResolver,
+  Root,
 } from "type-graphql";
 import { getConnection } from "typeorm";
 import { v4 as uuidv4 } from "uuid";
@@ -16,14 +18,7 @@ import { MyContext } from "../types";
 import { sendEmail } from "../utils/sendEmail";
 import { validateRegister } from "../utils/validateRegister";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
-
-@ObjectType()
-class FieldError {
-  @Field()
-  field: string;
-  @Field()
-  message: string;
-}
+import { FieldError } from "./FieldError";
 
 @ObjectType()
 class UserResponse {
@@ -33,8 +28,18 @@ class UserResponse {
   user?: User;
 }
 
-@Resolver()
+@Resolver(User)
 export class UserResolver {
+  @FieldResolver(() => String)
+  email(@Root() user: User, @Ctx() { req }: MyContext) {
+    // logged-in user is requesting, so it's okay to show
+    if (req.session!.userId === user.id) {
+      return user.email;
+    }
+
+    return "";
+  }
+
   @Query(() => User, { nullable: true })
   me(@Ctx() { req }: MyContext) {
     if (!req.session!.userId) return null;

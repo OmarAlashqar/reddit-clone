@@ -13,8 +13,11 @@ import {
   MeDocument,
   MeQuery,
   RegisterMutation,
+  VoteMutationVariables,
 } from "../generated/graphql";
 import { betterUpdateQuery } from "./betterUpdateQuery";
+import gql from "graphql-tag";
+import { isServer } from "./isServer";
 
 const errorExchange: Exchange = ({ forward }) => (ops$) => {
   return pipe(
@@ -69,7 +72,7 @@ const cursorPagination = (cursorKey = "data"): Resolver => {
   };
 };
 
-export const createUrqlClient = (ssrExchange: any) => {
+export const createUrqlClient = (ssrExchange: any, ctx: any) => {
   const cacheEx = cacheExchange({
     keys: {
       PaginatedPosts: () => null,
@@ -81,6 +84,49 @@ export const createUrqlClient = (ssrExchange: any) => {
     },
     updates: {
       Mutation: {
+        vote: (_result, args, cache, info) => {
+          const { postId, value } = args as VoteMutationVariables;
+          const data = cache.readFragment(
+            gql`
+              fragment _ on Post {
+                id
+                points
+              }
+            `,
+            { id: postId } as any
+          );
+
+          if (data) {
+            // action already complete
+            if (data.voteStatus === args.value) return;
+
+            const newPoints =
+              (data.points as number) + (!data.voteStatus ? 1 : 2) * value;
+            cache.writeFragment(
+              gql`
+                fragment _ on Post {
+                  points
+                  voteStatus
+                }
+              `,
+              { id: postId, points: newPoints, voteStatus: value } as any
+            );
+          }
+        },
+        createPost: (_result, args, cache, info) => {
+          // grabs all queries in the cache
+          const allFields = cache.inspectFields("Query");
+
+          // select appropriate ones
+          const fieldInfos = allFields.filter(
+            (info) => info.fieldName === "posts"
+          );
+
+          fieldInfos.forEach((fi) => {
+            // invalidate cache to refetch data
+            cache.invalidate("Query", "posts", fi.arguments || {});
+          });
+        },
         login: (_result, args, cache, info) => {
           betterUpdateQuery<LoginMutation, MeQuery>(
             cache,
@@ -122,6 +168,8 @@ export const createUrqlClient = (ssrExchange: any) => {
     url: "http://localhost:4000/graphql",
     fetchOptions: {
       credentials: "include" as const, // sends cookies
+      // forward session cookie, SSR can access it now
+      headers: isServer() ? { cookie: ctx?.req?.headers?.cookie } : undefined,
     },
     exchanges: [
       dedupExchange,

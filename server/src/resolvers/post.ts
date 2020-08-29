@@ -16,6 +16,7 @@ import { getConnection } from "typeorm";
 import { Post } from "../entities/Post";
 import { isAuth } from "../middleware/isAuth";
 import { MyContext } from "../types";
+import { FieldError } from "./FieldError";
 
 @InputType()
 class PostInput {
@@ -33,6 +34,14 @@ class PaginatedPosts {
   hasMore: boolean;
 }
 
+@ObjectType()
+export class PostResponse {
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+  @Field(() => Post, { nullable: true })
+  post?: Post;
+}
+
 @Resolver(Post)
 export class PostResolver {
   @FieldResolver(() => String)
@@ -48,24 +57,46 @@ export class PostResolver {
   @Query(() => PaginatedPosts)
   async posts(
     @Arg("limit", () => Int) limit: number,
-    @Arg("cursor", () => String, { nullable: true }) cursor: string | null
+    @Arg("cursor", () => String, { nullable: true }) cursor: string | null,
+    @Ctx() { req }: MyContext
   ): Promise<PaginatedPosts> {
+    const { userId } = req.session!;
     const actualLimit = Math.min(50, limit);
 
-    const qb = getConnection()
-      .getRepository(Post)
-      .createQueryBuilder("p")
-      .orderBy('"createdAt"', "DESC")
-      // attempt to grab an extra one to see if there's more
-      .take(actualLimit + 1);
+    const replacements: any[] = [actualLimit + 1];
 
+    if (userId) replacements.push(userId);
+
+    let cursorIndex = 3;
     if (cursor) {
-      qb.where('"createdAt" < :cursor', {
-        cursor: new Date(parseInt(cursor, 10)),
-      });
+      replacements.push(new Date(parseInt(cursor)));
+      cursorIndex = replacements.length;
     }
 
-    const posts = await qb.getMany();
+    const posts = await getConnection().query(
+      `
+      SELECT
+        p.*,
+        json_build_object(
+          'id', u.id,
+          'username', u.username,
+          'email', u.email,
+          'createdAt', u."createdAt",
+          'updatedAt', u."updatedAt"
+        ) creator,
+        ${
+          userId
+            ? `(SELECT value FROM vote WHERE "userId" = $2 AND "postId" = p.id) "voteStatus"`
+            : `null as "voteStatus"`
+        }
+      FROM post p
+      INNER JOIN public.user u ON u.id = p."creatorId"
+      ${cursor ? `WHERE p."createdAt" < $${cursorIndex}` : ""}
+      ORDER BY p."createdAt" DESC
+      LIMIT $1
+      `,
+      replacements
+    );
 
     return {
       posts: posts.slice(0, actualLimit),
