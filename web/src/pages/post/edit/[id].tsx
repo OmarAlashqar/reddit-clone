@@ -20,7 +20,7 @@ import { useGetPostFromUrl } from "../../../utils/useGetPostFromUrl";
 export const EditPost: React.FC = ({}) => {
   const router = useRouter();
   const [{ data, fetching }] = useGetPostFromUrl();
-  const [_, updatePost] = useUpdatePostMutation();
+  const [, updatePost] = useUpdatePostMutation();
 
   if (fetching) {
     return (

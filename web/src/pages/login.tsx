@@ -14,7 +14,7 @@ interface loginProps {}
 
 export const Login: React.FC<loginProps> = ({}) => {
   const router = useRouter();
-  const [_, login] = useLoginMutation();
+  const [, login] = useLoginMutation();
 
   return (
     <Wrapper variant="small">

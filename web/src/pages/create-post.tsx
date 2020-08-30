@@ -12,7 +12,7 @@ import { useIsAuth } from "../utils/useIsAuth";
 export const CreatePost: React.FC<{}> = ({}) => {
   useIsAuth();
   const router = useRouter();
-  const [_, createPost] = useCreatePostMutation();
+  const [, createPost] = useCreatePostMutation();
   return (
     <Layout variant="small">
       <Formik

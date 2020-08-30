@@ -20,7 +20,7 @@ import { createUrqlClient } from "../../utils/createUrqlClient";
 import { toErrorMap } from "../../utils/toErrorMap";
 
 export const ChangePassword: NextPage = () => {
-  const [_, changePassword] = useChangePasswordMutation();
+  const [, changePassword] = useChangePasswordMutation();
   const router = useRouter();
   const [tokenError, setTokenError] = useState("");
 

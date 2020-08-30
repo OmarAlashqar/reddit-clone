@@ -7,7 +7,7 @@ interface VoteSectionProps {
 }
 
 export const VoteSection: React.FC<VoteSectionProps> = ({ post }) => {
-  const [_, vote] = useVoteMutation();
+  const [, vote] = useVoteMutation();
   const [loadingState, setLoadingState] = useState<
     "upvote-loading" | "downvote-loading" | "not-loading"
   >();

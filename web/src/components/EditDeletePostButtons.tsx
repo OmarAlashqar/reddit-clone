@@ -10,7 +10,7 @@ interface EditDeletePostButtonsProps {
 export const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({
   id,
 }) => {
-  const [_, deletePost] = useDeletePostMutation();
+  const [, deletePost] = useDeletePostMutation();
 
   return (
     <>
