@@ -5,10 +5,12 @@ import { useDeletePostMutation } from "../generated/graphql";
 
 interface EditDeletePostButtonsProps {
   id: number;
+  onDelete?: () => void;
 }
 
 export const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({
   id,
+  onDelete,
 }) => {
   const [deletePost] = useDeletePostMutation();
 
@@ -36,6 +38,8 @@ export const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({
               cache.evict({ id: `Post:${id}` });
             },
           });
+
+          if (onDelete) onDelete();
         }}
       />
     </>

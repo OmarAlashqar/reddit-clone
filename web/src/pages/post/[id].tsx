@@ -13,10 +13,12 @@ import { Layout } from "../../components/Layout";
 import { useMeQuery } from "../../generated/graphql";
 import { useGetPostFromUrl } from "../../utils/useGetPostFromUrl";
 import { withApollo } from "../../utils/withApollo";
+import { useRouter } from "next/router";
 
 export const Post: React.FC = ({}) => {
   const { data, loading } = useGetPostFromUrl();
   const { data: meData } = useMeQuery();
+  const router = useRouter();
 
   if (loading) {
     return (
@@ -47,7 +49,12 @@ export const Post: React.FC = ({}) => {
 
       {meData?.me?.id !== data.post.creator.id ? null : (
         <Box ml="auto">
-          <EditDeletePostButtons id={data.post.id} />
+          <EditDeletePostButtons
+            onDelete={() => {
+              router.push("/");
+            }}
+            id={data.post.id}
+          />
         </Box>
       )}
     </Layout>
