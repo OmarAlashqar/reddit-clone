@@ -12,7 +12,7 @@ Check it out in action: [reddit-clone.oalashqar.me](reddit-clone.oalashqar.me)
 - Apollo (GraphQL Client)
 - TypeGraphQL
 
-### Backend
+### Back-end
 
 - NodeJS
 - TypeScript
