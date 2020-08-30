@@ -17,8 +17,8 @@ import { User } from "../entities/User";
 import { MyContext } from "../types";
 import { sendEmail } from "../utils/sendEmail";
 import { validateRegister } from "../utils/validateRegister";
-import { UsernamePasswordInput } from "./UsernamePasswordInput";
-import { FieldError } from "./FieldError";
+import { UsernamePasswordInput } from "./types/UsernamePasswordInput";
+import { FieldError } from "./types/FieldError";
 
 @ObjectType()
 class UserResponse {

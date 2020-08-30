@@ -1,4 +1,4 @@
-import { UsernamePasswordInput } from "../resolvers/UsernamePasswordInput";
+import { UsernamePasswordInput } from "../resolvers/types/UsernamePasswordInput";
 
 // very basic for now, should be changed
 export const validateRegister = ({
