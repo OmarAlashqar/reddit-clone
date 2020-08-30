@@ -35,7 +35,7 @@ const createClient = (ctx: NextPageContext) =>
     cache: new InMemoryCache(cacheConfig),
     credentials: "include", // sends cookies
     headers: {
-      cookie: (isServer() ? ctx.req?.headers.cookie : undefined) || "",
+      cookie: (isServer() ? ctx?.req?.headers.cookie : undefined) || "",
     },
   });
 
