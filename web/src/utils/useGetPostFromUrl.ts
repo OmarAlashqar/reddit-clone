@@ -8,7 +8,7 @@ export const useGetPostFromUrl = () => {
     typeof router.query.id === "string" ? parseInt(router.query.id) : -1;
 
   return usePostQuery({
-    pause: idParsed === -1,
+    skip: idParsed === -1,
     variables: { id: idParsed },
   });
 };

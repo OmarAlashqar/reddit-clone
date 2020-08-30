@@ -8,21 +8,20 @@ import {
   FormControl,
 } from "@chakra-ui/core";
 import { Form, Formik } from "formik";
-import { withUrqlClient } from "next-urql";
 import { useRouter } from "next/router";
 import React from "react";
 import { InputField } from "../../../components/InputField";
 import { Layout } from "../../../components/Layout";
 import { useUpdatePostMutation } from "../../../generated/graphql";
-import { createUrqlClient } from "../../../utils/createUrqlClient";
 import { useGetPostFromUrl } from "../../../utils/useGetPostFromUrl";
+import { withApollo } from "../../../utils/withApollo";
 
 export const EditPost: React.FC = ({}) => {
   const router = useRouter();
-  const [{ data, fetching }] = useGetPostFromUrl();
-  const [, updatePost] = useUpdatePostMutation();
+  const { data, loading } = useGetPostFromUrl();
+  const [updatePost] = useUpdatePostMutation();
 
-  if (fetching) {
+  if (loading) {
     return (
       <Layout>
         <div>loading...</div>
@@ -47,8 +46,10 @@ export const EditPost: React.FC = ({}) => {
         initialValues={{ title: data.post.title, text: data.post.text }}
         onSubmit={async (values) => {
           await updatePost({
-            id: data.post!.id,
-            ...values,
+            variables: {
+              id: data.post!.id,
+              ...values,
+            },
           });
           router.back();
         }}
@@ -73,7 +74,7 @@ export const EditPost: React.FC = ({}) => {
                 type="submit"
                 variantColor="teal"
               >
-                Edit Post
+                Update Post
               </Button>
             </FormControl>
           </Form>
@@ -83,4 +84,4 @@ export const EditPost: React.FC = ({}) => {
   );
 };
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(EditPost);
+export default withApollo({ ssr: false })(EditPost);
