@@ -1,6 +1,6 @@
 {
-  "name": "with-chakra-ui",
-  "version": "0.1.0",
+  "name": "reddit-clone",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

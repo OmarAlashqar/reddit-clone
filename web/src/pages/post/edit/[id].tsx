@@ -13,7 +13,7 @@ import React from "react";
 import { InputField } from "../../../components/InputField";
 import { Layout } from "../../../components/Layout";
 import { useUpdatePostMutation } from "../../../generated/graphql";
-import { useGetPostFromUrl } from "../../../utils/useGetPostFromUrl";
+import { useGetPostFromUrl } from "../../../hooks/useGetPostFromUrl";
 import { withApollo } from "../../../utils/withApollo";
 
 export const EditPost: React.FC = ({}) => {

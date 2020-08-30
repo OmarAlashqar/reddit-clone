@@ -5,7 +5,7 @@ import React from "react";
 import { InputField } from "../components/InputField";
 import { Layout } from "../components/Layout";
 import { useCreatePostMutation } from "../generated/graphql";
-import { useIsAuth } from "../utils/useIsAuth";
+import { useIsAuth } from "../hooks/useIsAuth";
 import { withApollo } from "../utils/withApollo";
 
 export const CreatePost: React.FC<{}> = ({}) => {

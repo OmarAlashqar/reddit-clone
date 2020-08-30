@@ -11,7 +11,7 @@ import React from "react";
 import { EditDeletePostButtons } from "../../components/EditDeletePostButtons";
 import { Layout } from "../../components/Layout";
 import { useMeQuery } from "../../generated/graphql";
-import { useGetPostFromUrl } from "../../utils/useGetPostFromUrl";
+import { useGetPostFromUrl } from "../../hooks/useGetPostFromUrl";
 import { withApollo } from "../../utils/withApollo";
 import { useRouter } from "next/router";
 
