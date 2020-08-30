@@ -24,7 +24,7 @@ export const Login: React.FC<loginProps> = ({}) => {
 
   // already logged in
   useEffect(() => {
-    if (data?.me) router.back();
+    if (data?.me) router.push("/");
   });
 
   return (
