@@ -6,6 +6,7 @@ import {
   BasePostFragment,
   useVoteMutation,
   VoteMutation,
+  useMeQuery,
 } from "../generated/graphql";
 
 interface VoteSectionProps {
@@ -54,6 +55,8 @@ const updateAfterVote = (
 
 export const VoteSection: React.FC<VoteSectionProps> = ({ post }) => {
   const [vote] = useVoteMutation();
+  const { data } = useMeQuery();
+
   const [loadingState, setLoadingState] = useState<
     "upvote-loading" | "downvote-loading" | "not-loading"
   >();
@@ -74,6 +77,7 @@ export const VoteSection: React.FC<VoteSectionProps> = ({ post }) => {
         isLoading={loadingState === "upvote-loading"}
         variantColor={post.voteStatus == 1 ? "green" : undefined}
         aria-label="upvote"
+        isDisabled={!data?.me}
       />
       {post.points}
       <IconButton
@@ -90,6 +94,7 @@ export const VoteSection: React.FC<VoteSectionProps> = ({ post }) => {
         isLoading={loadingState === "downvote-loading"}
         variantColor={post.voteStatus == -1 ? "red" : undefined}
         aria-label="downvote"
+        isDisabled={!data?.me}
       />
     </Flex>
   );

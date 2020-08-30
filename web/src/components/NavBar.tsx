@@ -24,7 +24,7 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     body = (
       <Flex align="center">
         <NextLink href="/create-post">
-          <Button as={Link} mr={4}>
+          <Button as={Link} mr={4} color="dark" bg="white">
             Create Post
           </Button>
         </NextLink>
@@ -36,6 +36,7 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
             await apolloClient.resetStore();
           }}
           isLoading={logoutFetching}
+          color="blue"
         >
           logout
         </Button>
@@ -46,18 +47,20 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     body = (
       <>
         <NextLink href="/login">
-          <Link mr={4}>login</Link>
+          <Link mr={4} color="blue">
+            login
+          </Link>
         </NextLink>
 
         <NextLink href="/register">
-          <Link>register</Link>
+          <Link color="blue">register</Link>
         </NextLink>
       </>
     );
   }
 
   return (
-    <Flex bg="tan" p={4} position="sticky" top={0} zIndex={1}>
+    <Flex bg="header" color="white" p={4} position="sticky" top={0} zIndex={1}>
       <Flex margin="auto" align="center" maxW={800} flex={1}>
         <NextLink href="/">
           <Link>
