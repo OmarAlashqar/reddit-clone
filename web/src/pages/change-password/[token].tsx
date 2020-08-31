@@ -13,7 +13,7 @@ import NextLink from "next/link";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import { InputField } from "../../components/InputField";
-import { Wrapper } from "../../components/Wrapper";
+import { Layout } from "../../components/Layout";
 import {
   MeDocument,
   MeQuery,
@@ -30,7 +30,7 @@ export const ChangePassword: NextPage = () => {
   const { token } = router.query;
 
   return (
-    <Wrapper variant="small">
+    <Layout variant="small">
       <Formik
         initialValues={{ newPassword: "" }}
         onSubmit={async (values, { setErrors }) => {
@@ -96,7 +96,7 @@ export const ChangePassword: NextPage = () => {
           </Form>
         )}
       </Formik>
-    </Wrapper>
+    </Layout>
   );
 };
 

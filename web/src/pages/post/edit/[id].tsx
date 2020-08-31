@@ -23,14 +23,14 @@ export const EditPost: React.FC = ({}) => {
 
   if (loading) {
     return (
-      <Layout>
+      <Layout variant="small">
         <div>loading...</div>
       </Layout>
     );
   } else if (!data?.post) {
     // no post with that id
     return (
-      <Layout>
+      <Layout variant="small">
         <Alert status="error" mt={4}>
           <AlertIcon />
           <AlertTitle mr={2}>There's no post to be found here!</AlertTitle>
