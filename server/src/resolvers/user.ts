@@ -55,6 +55,7 @@ export class UserResolver {
     const errors = validateRegister({ username, email, password });
     if (errors) return { errors };
 
+    const emailLowercase = email.toLowerCase();
     const hashedPassword = await argon2.hash(password);
 
     let user = null;
@@ -69,7 +70,7 @@ export class UserResolver {
         .values({
           username,
           password: hashedPassword,
-          email,
+          email: emailLowercase,
         })
         .returning("*")
         .execute();
@@ -103,7 +104,7 @@ export class UserResolver {
   ): Promise<UserResponse> {
     // this is ok since it was enforced at register
     const filter = usernameOrEmail.includes("@")
-      ? { where: { email: usernameOrEmail } }
+      ? { where: { email: usernameOrEmail.toLowerCase() } }
       : { where: { username: usernameOrEmail } };
 
     const user = await User.findOne(filter);
