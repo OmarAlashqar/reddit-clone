@@ -1,6 +1,6 @@
 # Reddit-Clone
 
-Check it out in action: [reddit-clone.oalashqar.me](reddit-clone.oalashqar.me)
+Check it out in action: [reddit-clone.oalashqar.me](https://reddit-clone.oalashqar.me)
 
 ## Technologies used
 
