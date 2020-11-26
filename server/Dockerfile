@@ -12,9 +12,6 @@ RUN npm install
 # bundle app source
 COPY . .
 
-# copy environment variables
-COPY .env.production .env
-
 # compile typescript code
 RUN npm run build
 
