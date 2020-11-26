@@ -20,7 +20,7 @@ if [ "$SURE" == "${SURE#[Yy]}" ] ;then
   exit 1
 fi
 
-docker build -t oalashqar/reddit-clone:$VERSION .
-docker push oalashqar/reddit-clone:$VERSION
+docker build -t oalashqar/reddit-clone-api:$VERSION .
+docker push oalashqar/reddit-clone-api:$VERSION
 
-ssh $REMOTE "docker pull oalashqar/reddit-clone:$VERSION && docker tag oalashqar/reddit-clone:$VERSION dokku/api:$VERSION && dokku deploy api $VERSION"
+ssh $REMOTE "docker pull oalashqar/reddit-clone-api:$VERSION && docker tag oalashqar/reddit-clone-api:$VERSION dokku/reddit-clone-api:$VERSION && dokku deploy reddit-clone-api $VERSION"
