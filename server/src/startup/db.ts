@@ -15,5 +15,6 @@ export const db = async () => {
     synchronize: !__prod__,
     entities: [Post, User, Vote],
     migrations: [Initial1598727826193],
+    migrationsRun: __prod__
   });
 };
