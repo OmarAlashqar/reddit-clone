@@ -1,5 +1,4 @@
 import { createConnection } from "typeorm";
-import path from "path";
 import { __prod__ } from "../constants";
 
 import { Post } from "../entities/Post";
